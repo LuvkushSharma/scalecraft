@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scalecraft | System design and AI agents, made simple</title>
+<meta name="description" content="Learn system design and AI agents from zero to interview level, in plain English or Hinglish, with interactive diagrams and widgets.">
+<meta name="theme-color" content="#F4F6F9">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css?v=16">
+<script>
+  /* Self-repair after an update: an older offline cache may still hand out old CSS/JS.
+     When the site version changes, drop every cache, update the service worker and reload once. */
+  (function () {
+    var V = '16';
+    try {
+      if (localStorage.getItem('ztu-ver') === V) return;
+      localStorage.setItem('ztu-ver', V);
+      if (!('caches' in window) || !navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+      caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })
+        .then(function () { return navigator.serviceWorker.getRegistrations(); })
+        .then(function (rs) { return Promise.all(rs.map(function (r) { return r.update().catch(function () {}); })); })
+        .then(function () { location.reload(); }, function () { location.reload(); });
+    } catch (e) {}
+  })();
+  try { var t = localStorage.getItem('ztu-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to lesson</a>
+
+<header class="top">
+  <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open topics" aria-controls="side" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="#/welcome" aria-label="Scalecraft home">
+    <svg class="brand-mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+      <rect x="2" y="12" width="9" height="8" rx="2"/><rect x="21" y="4" width="9" height="8" rx="2"/><rect x="21" y="20" width="9" height="8" rx="2"/>
+      <path d="M11 16h5v-8h5M16 16v8h5" fill="none" stroke-width="1.6"/>
+    </svg>
+    <span>Scalecraft</span>
+  </a>
+  <div class="top-actions">
+    <button class="lang-switch" id="langSwitch" type="button" role="switch" aria-checked="false" aria-label="Show lessons in English">
+      <span class="ls-thumb" aria-hidden="true"></span>
+      <span class="ls-opt" data-lang="hi">Hinglish</span>
+      <span class="ls-opt" data-lang="en">English</span>
+    </button>
+    <button class="btn ghost small" id="offlineBtn" type="button">Save offline</button>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle dark mode">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side" id="side" aria-label="Course topics">
+    <div class="side-head">
+      <div class="progress">
+        <div class="progress-row"><span>Your progress</span><span id="progText">0 / 0</span></div>
+        <div class="bar"><i id="progBar"></i></div>
+      </div>
+      <label class="sr-only" for="search">Search topics</label>
+      <input id="search" type="search" placeholder="Topic dhoondho: cache, kafka, uber" autocomplete="off">
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <main id="main" tabindex="-1"></main>
+
+  <aside class="toc" id="toc" aria-label="On this page"></aside>
+</div>
+<div class="scrim" id="scrim"></div>
+
+<script src="assets/js/curriculum.js?v=16"></script>
+<script src="assets/js/components.js?v=16"></script>
+<script src="assets/js/app.js?v=16"></script>
+</body>
+</html>
