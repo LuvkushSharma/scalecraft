@@ -4,7 +4,7 @@
 */
 (function () {
   const { h, render } = window.Components;
-  const CACHE = 'ztu-v16';
+  const CACHE = 'ztu-v17';
   const $ = id => document.getElementById(id);
   const main = $('main'), nav = $('nav'), toc = $('toc'), side = $('side');
 
@@ -224,6 +224,7 @@
       lb.id = 'listenBtn';
       lb.onclick = () => toggleListen(lb);
       row.appendChild(lb);
+      if ('speechSynthesis' in window) row.appendChild(voicePicker());
       head.appendChild(row);
     }
     return head;
@@ -330,10 +331,54 @@
 
   /* ------------------------------------------------------------ LISTEN */
   let speaking = false;
-  function pickVoice() {
-    const v = speechSynthesis.getVoices();
-    return (lang === 'en' && v.find(x => x.lang === 'en-US' || x.lang === 'en-GB')) || v.find(x => x.lang === 'en-IN') || v.find(x => x.lang && x.lang.startsWith('hi')) || v.find(x => x.lang && x.lang.startsWith('en')) || null;
+  // Browsers ship many voices; the first one is often a robotic "compact" or novelty voice.
+  // Score them so a natural one wins, and let the reader pick their own.
+  const NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|fred|kathy|deranged|hysterical|pipe|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/i;
+  function voiceScore(v) {
+    if (!v.lang || !/^(en|hi)/i.test(v.lang) || NOVELTY.test(v.name)) return -1;
+    let s = 0;
+    if (/natural|neural|premium|enhanced|siri/i.test(v.name)) s += 60;
+    if (/google/i.test(v.name)) s += 50;
+    if (/compact/i.test(v.name)) s -= 40;
+    if (!v.localService) s += 10; // online voices are usually smoother
+    const L = v.lang.replace('_', '-').toLowerCase();
+    // Hinglish is written in Latin letters, so an Indian English voice reads it most naturally.
+    if (lang === 'hi') s += L === 'en-in' ? 90 : L.startsWith('hi') ? 5 : 0;
+    else s += L === 'en-us' || L === 'en-gb' ? 30 : L === 'en-in' ? 25 : 0;
+    if (/samantha|daniel|karen|moira|tessa|rishi|veena|lekha|aaron|nicky/i.test(v.name)) s += 20;
+    return s;
   }
+  function goodVoices() {
+    return speechSynthesis.getVoices().filter(v => voiceScore(v) >= 0).sort((a, b) => voiceScore(b) - voiceScore(a));
+  }
+  function pickVoice() {
+    const all = goodVoices();
+    const saved = store.get('ztu-voice-' + lang, '');
+    return all.find(v => v.name === saved) || all[0] || null;
+  }
+  function voicePicker() {
+    const sel = h('select', 'voice-pick');
+    sel.setAttribute('aria-label', 'Reading voice');
+    const fill = () => {
+      const all = goodVoices();
+      if (!all.length) { sel.hidden = true; return; }
+      sel.hidden = false;
+      const cur = pickVoice();
+      sel.innerHTML = '';
+      all.slice(0, 12).forEach(v => {
+        const o = h('option', null, `${v.name.replace(/\s*\(.*\)$/, '')} · ${v.lang}`);
+        o.value = v.name;
+        if (cur && v.name === cur.name) o.selected = true;
+        sel.appendChild(o);
+      });
+    };
+    fill();
+    if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = fill; // voices load late in Chrome
+    sel.onchange = () => { store.set('ztu-voice-' + lang, sel.value); if (speaking) { stopListen(); toggleListen($('listenBtn')); } };
+    return sel;
+  }
+  // Short pieces sound more natural (real pauses) and avoid Chrome cutting off long utterances.
+  const sentences = t => (t.replace(/\s+/g, ' ').match(/[^.!?।:]+[.!?।:]*\s*/g) || [t]).map(s => s.trim()).filter(Boolean);
   function toggleListen(btn) {
     if (!('speechSynthesis' in window)) { btn.textContent = u('noListen'); return; }
     if (speaking) { stopListen(); return; }
@@ -349,13 +394,16 @@
       const el = parts[k++];
       el.classList.add('speaking');
       el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      const u = new SpeechSynthesisUtterance(el.innerText);
-      if (voice) u.voice = voice;
-      u.lang = voice ? voice.lang : 'en-IN';
-      u.rate = 0.98;
-      u.onend = next;
-      u.onerror = next;
-      speechSynthesis.speak(u);
+      const bits = sentences(el.innerText);
+      bits.forEach((txt, i) => {
+        const ut = new SpeechSynthesisUtterance(txt);
+        try { if (voice) ut.voice = voice; } catch (e) { /* keep the default voice */ }
+        ut.lang = voice ? voice.lang : (lang === 'en' ? 'en-US' : 'en-IN');
+        ut.rate = 1;
+        ut.pitch = 1;
+        if (i === bits.length - 1) { ut.onend = next; ut.onerror = next; }
+        speechSynthesis.speak(ut);
+      });
     };
     next();
   }
